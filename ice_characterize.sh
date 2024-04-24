@@ -72,22 +72,19 @@ source /home/usuario/miniconda3/etc/profile.d/conda.sh
 while read -r i; do
     f_name=$(basename "$INPUT_DIR"/"$i" .fasta)
     echo $f_name
-    # Activate nano2 environment
+    # Activate icecreen environment
     conda activate nano2
 
     # Annotate with Bakta
     bakta --db "$BAKTA_DB" --keep-contig-headers --skip-plot --verbose --output "$OUTPUT_DIR"/bakta --threads "$THREADS" "$INPUT_DIR"/"$i"
     
-    # Activate covidion environment
-    conda activate covidion
-    
     # Run macsyfinder for CONJScan
     mkdir -p "$OUTPUT_DIR"/conj
-    macsyfinder --force -m CONJScan/Plasmids all --sequence-db "$OUTPUT_DIR"/bakta/"$f_name".faa --db-type ordered_replicon -o "$OUTPUT_DIR"/conj/"$f_name" -vv --e-value-search 0.0001 
+    macsyfinder --force -w $THREADS --timeout 30m -m CONJScan/Plasmids all --sequence-db "$OUTPUT_DIR"/bakta/"$f_name".faa --db-type ordered_replicon -o "$OUTPUT_DIR"/conj/"$f_name" -vv --e-value-search 0.0001 
 
     # Run macsyfinder for TXSScan
     mkdir -p "$OUTPUT_DIR"/txss
-    macsyfinder --force -m TXSScan all --sequence-db "$OUTPUT_DIR"/bakta/"$f_name".faa --db-type ordered_replicon -o "$OUTPUT_DIR"/txss/"$f_name" -vv --e-value-search 0.0001
+    macsyfinder --force -w $THREADS --timeout 30m -m TXSScan all --sequence-db "$OUTPUT_DIR"/bakta/"$f_name".faa --db-type ordered_replicon -o "$OUTPUT_DIR"/txss/"$f_name" -vv --e-value-search 0.0001
     
     # Run MOBscan
     mkdir -p "$OUTPUT_DIR"/MOBscan
