@@ -3,7 +3,13 @@
 Pipeline designed to analyze bacterial chromosomes in search of distinctive markers facilitating the identification of ICEs.
 
 ## Requirements
+**Please, create a specific Conda environment from the available yaml file**
+```
+cd ICEcreen
+conda env create -n icecreen --file icecreen.yml
+```
 
+- Conda
 - Python3
 - Bakta
 - macsyfinder
@@ -17,5 +23,5 @@ Pipeline designed to analyze bacterial chromosomes in search of distinctive mark
 The file "samples.txt" (mandatory name) contains absolute or relative paths to the FASTA files to be analyzed (preferably chromosomes), separated by newlines.
 ```
 bash ice_characterize.sh -i samples.txt [-t 30] [-o /path/to/output]
-python3 ice_parser.py -p . 
+python3 ice_parser.py -p ./
 ```
