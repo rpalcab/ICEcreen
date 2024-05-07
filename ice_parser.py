@@ -10,6 +10,7 @@ import os
 import re
 import math
 import csv
+import time
 from collections import defaultdict
 from Bio import SeqIO
 from Bio.Seq import Seq
@@ -138,8 +139,14 @@ def extract_mob(mob_path, df_bakta):
             df_mob[['Product', 'Gene']] = df_mob['gene_name'].str.extract('(.*[_\w]?)_(\w+)')
             df_mob['Sys_id'] = df_mob['sys_id'].str.replace(f'{s}_', '')
             df_mob = df_mob[['Sequence Id', 'Start', 'Stop', 'Strand', 'Gene', 'Product', 'Sys_id']]
+            
+            # Create a new column 'Sys_id_sub' with updated values, divides extra large (presumably wrong) 
+            df_mob['Sys_id_sub'] = df_mob.groupby((df_mob['Start'] - 1) // 50000).grouper.group_info[0] + 1
+            df_mob['Sys_id'] = df_mob['Sys_id_sub'].apply(lambda x: f"{df_mob['Sys_id'].iloc[0]}_{x}")
+
             df_mob['Source'] = 'CONJScan'
             df_mob['Tag'] = 'T4SS'
+            df_mob.drop(columns='Sys_id_sub', inplace=True)
             return df_mob
         except: pass
     return None
@@ -385,7 +392,7 @@ def characterize_ice(ice_df, ice_n, k, s, length_sys, start_sys, end_sys, sys_i_
                      "Sys_id": str}
                      
     df = df.astype(dtype_mapping)
-    df.to_csv(f'{path}/tables/aaa_ICE_{ice_n}_{k}_{s}.csv')
+    df.to_csv(f'{path}/tables/ICE_{ice_n}_{k}_{s}.csv')
     
     # Extract ICE gbk
     ice_object = Seq(ice_fasta)
@@ -467,7 +474,7 @@ def system_selection(sys_pairs, df_bakta, contig_df, complete_ice_df, ice_n, k, 
             end_sys = max([sys_i_pos[1], sys_j_pos[1]])
             length_sys = end_sys - start_sys
             # Distancia menor de 50000pdb
-            if length_sys < 50000 and length_sys > 20000:
+            if length_sys < 50000: #and length_sys > 20000:
                 # ICE df (containing MPF and MOB)
                 ice_df = contig_df.loc[(contig_df['Sys_id'].str.contains(sys_i_id)) | (contig_df['Sys_id'].str.contains(sys_j_id))]
 
@@ -564,91 +571,3 @@ for s in samples:
 
 
 complete_ice_df.to_csv(f'{path}/tables/ICE_summary.csv', index=False)
-
-
-# # # Extract distances
-
-# # In[21]:
-
-
-# def get_dist_elem(complete_ice_df, element):
-#     d_dist = {}
-#     for _, row in complete_ice_df.iterrows():
-#         sample = row['Nombre muestra']
-#         n_ice = row['N ICE']
-#         contig = row['contig']
-#         start = row['start']
-#         stop = row['stop']
-#         df_total = pd.read_csv(f'{path}tables/{sample}.csv')
-#         df_bakta = df_total.loc[df_total['Sequence Id'] == contig]
-#         df_ele = df_bakta.loc[df_bakta['Sys_id'] == f'{element}']
-#         dist_ele = np.inf
-#         for _, ele in df_ele.iterrows():
-#             if ele['Start'] < start:
-#                 dist = start - ele['Start']
-#             elif ele['Stop'] > stop:
-#                 dist = ele['Stop'] - stop
-#             if dist < dist_ele: dist_ele = dist
-#         d_dist[f'{sample}_{contig}_{n_ice}'] = dist_ele
-
-#     with open(f"{path}/anotacion/{element}_dist.csv", "w") as f:
-#         for key, value in d_dist.items():
-#             f.write('%s\t%s\n' % (key, value))
-
-#     return d_dist
-
-
-# # In[22]:
-
-
-# def get_distance_range(distance, step):
-#     if math.isinf(distance):
-#         return float('inf')
-#     return math.floor(distance / step) * step
-
-
-# # In[23]:
-
-
-# def plot_distance(d_dist, step):
-#     distance_ranges = defaultdict(int)
-
-#     # Populate the new dictionary
-#     for sample, distance in d_dist.items():
-#         distance_range = get_distance_range(distance, step)
-#         distance_ranges[distance_range] += 1
-
-#     # Convert the defaultdict to a regular dictionary
-#     result_dict = dict(distance_ranges)
-
-#     # Print the result
-#     print(result_dict)
-
-#     distance_ranges, counts = zip(*sorted(result_dict.items()))
-
-#     plt.figure(figsize=(15, 6))
-#     plt.bar(distance_ranges, counts, width=step*2)
-
-#     plt.title('Distance Ranges Histogram')
-#     plt.xlabel('Distance Ranges (nt)')
-#     plt.ylabel('Count')
-#     plt.grid(axis='y')
-
-#     plt.show()
-
-#     return result_dict
-
-
-# # In[24]:
-
-
-# d_dist = get_dist_elem(complete_ice_df, 'tRNA')
-# plot_distance(d_dist, 100)
-
-
-# # In[25]:
-
-
-# d_dist = get_dist_elem(complete_ice_df, 'Integrase')
-# plot_distance(d_dist,100)
-
